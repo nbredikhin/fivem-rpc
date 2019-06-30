@@ -50,9 +50,9 @@ function RPC.CallAsync(name, params, source)
     end
     local p = promise.new()
 
-    CallExport("CallRemoteMethod", name, params, function (result, client)
-        p:resolve(result, client)
+    CallExport("CallRemoteMethod", name, params, function (...)
+        p:resolve({...})
     end, source)
 
-    return Citizen.Await(p)
+    return table.unpack(Citizen.Await(p))
 end
