@@ -7,7 +7,7 @@ local isResourceStarted = false
 
 local function CallExport(name, ...)
     if isResourceStarted or not RPC.isWaitingForResourceStart then
-        return exports.rpc[name](exports.rpc, ...)
+        return exports["fivem-rpc"][name](exports["fivem-rpc"], ...)
     else
         table.insert(pendingExportCalls, {
             name = name,
@@ -20,14 +20,21 @@ AddEventHandler(("on%sResourceStart"):format(IsDuplicityVersion() and "Server" o
     if GetCurrentResourceName() ~= resource then return end
 
     for i, c in ipairs(pendingExportCalls) do
-        exports.rpc[c.name](exports.rpc, table.unpack(c.args))
+        exports["fivem-rpc"][c.name](exports["fivem-rpc"], table.unpack(c.args))
     end
 
     isResourceStarted = true
 end)
 
-function RPC.Method(name, callback)
+function RPC.Register(name, callback)
     return CallExport("RegisterMethod", name, callback)
+end
+
+function RPC.Notify(name, params, source)
+    if not params then
+        params = {}
+    end
+    return CallExport("CallRemoteMethod", name, params, nil, source)
 end
 
 function RPC.Call(name, params, callback, source)

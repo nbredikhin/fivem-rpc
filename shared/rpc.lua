@@ -7,10 +7,10 @@ local registeredMethods = {}
 
 if IsDuplicityVersion() then
     RegisterServerEvent("rpc:call")
-    RegisterServerEvent("rpc:result")
+    RegisterServerEvent("rpc:response")
 else
     RegisterNetEvent("rpc:call")
-    RegisterNetEvent("rpc:result")
+    RegisterNetEvent("rpc:response")
 end
 
 ---------------------
@@ -34,8 +34,8 @@ local function GetResponseFunction(id)
     if not id then
         return function () end
     end
-    return function(result)
-        TriggerRemoteEvent("rpc:result", source, id, result)
+    return function(...)
+        TriggerRemoteEvent("rpc:response", source, id, ...)
     end
 end
 
@@ -72,15 +72,15 @@ AddEventHandler("rpc:call", function (id, name, params)
     if type(name) ~= "string" then return end
     if not registeredMethods[name] then return end
 
-    local result = registeredMethods[name](params, GetResponseFunction(id), source)
-    if result ~= nil and id then
-        TriggerRemoteEvent("rpc:result", source, id, result)
+    local returnValues = {registeredMethods[name](params, source, GetResponseFunction(id))}
+    if #returnValues > 0 and id then
+        TriggerRemoteEvent("rpc:response", source, id, table.unpack(returnValues))
     end
 end)
 
-AddEventHandler("rpc:result", function (id, result)
+AddEventHandler("rpc:response", function (id, ...)
     if not id then return end
     if not pendingCallbacks[id] then return end
-    pendingCallbacks[id](result)
+    pendingCallbacks[id](...)
     pendingCallbacks[id] = nil
 end)
